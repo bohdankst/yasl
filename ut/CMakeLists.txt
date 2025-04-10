@@ -1,4 +1,4 @@
-project(UT C CXX ASM)
+project(Yasl_ut C CXX ASM)
 
 include(../cmake/FetchUnity.cmake)
 
