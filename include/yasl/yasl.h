@@ -2,7 +2,7 @@
 #define YASL_H
 
 #include <stdlib.h>
-#include <yasl/yasl_types.h>
+#include "yasl/yasl_types.h"
 
 // <header> <payload> <payload crc16>
 // <header>: byte0 | byte1 | id (1b) | pkt cnt 1b | payload length (2b) | crc8
