@@ -23,6 +23,5 @@ set_target_properties(${PROJECT_NAME}
         C_STANDARD_REQUIRED ON
         C_EXTENSIONS        OFF
         HEADER_DIRS         ${CMAKE_SOURCE_DIR}/include
-        PUBLIC_HEADER       "${${PROJECT_NAME}_PUBLIC_HEADERS}"
         EXPORT_NAME         yasl
 )
