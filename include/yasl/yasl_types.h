@@ -1,6 +1,8 @@
 #ifndef YASL_TYPES_H
 #define YASL_TYPES_H
 
+#include <stdint.h>
+
 typedef struct __attribute__((__packed__)) {
     uint8_t byte1;
     uint8_t byte2;
