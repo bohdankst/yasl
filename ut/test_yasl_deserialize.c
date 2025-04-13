@@ -1,10 +1,9 @@
 #include "unity_fixture.h"
+#include <crc/checksum.h>
 #include <stdio.h>
 #include <string.h>
 #include <yasl/yasl.h>
-#include <yasl/yasl.h>
 #include <yasl_internal.h>
-#include <crc/checksum.h>
 
 TEST_GROUP(YaslDeSerializeTestGroup);
 
@@ -17,7 +16,7 @@ TEST(YaslDeSerializeTestGroup, test_deSerializeEmpty) {
     size_t maxSrPktSize = 20;
     uint8_t srPktBuf[maxSrPktSize];
 
-    yasl_init(&ctx, maxSrPktSize, srPktBuf);
+    yasl_init(&ctx, srPktBuf, maxSrPktSize);
 
     // serialize empty buffer
     uint8_t outBuf[yasl_getSerializedPktSize(&ctx, 0)];
@@ -35,7 +34,8 @@ TEST(YaslDeSerializeTestGroup, test_deSerializeEmpty) {
     uint8_t dataOut[1];
     uint8_t id;
     uint8_t counter;
-    TEST_ASSERT_EQUAL_UINT32(eYasl_ok,  yasl_getAvailablePkt(&ctx, dataOut, &dataOutSize, &id, &counter, sizeof(dataOut)));
+    TEST_ASSERT_EQUAL_UINT32(eYasl_ok,
+                             yasl_getAvailablePkt(&ctx, dataOut, &dataOutSize, &id, &counter, sizeof(dataOut)));
     TEST_ASSERT_EQUAL_UINT32(0, dataOutSize);
     TEST_ASSERT_EQUAL_UINT8(5, id);
     TEST_ASSERT_EQUAL_UINT8(0, counter);
@@ -46,13 +46,14 @@ TEST(YaslDeSerializeTestGroup, test_deSerializeSmall) {
     size_t maxSrPktSize = 20;
     uint8_t srPktBuf[maxSrPktSize];
 
-    yasl_init(&ctx, maxSrPktSize, srPktBuf);
+    yasl_init(&ctx, srPktBuf, maxSrPktSize);
 
     // serialize empty buffer
     uint8_t inBuff[2] = {20, 30};
     uint8_t outBuf[yasl_getSerializedPktSize(&ctx, 2)];
     size_t outBufSize;
-    TEST_ASSERT_EQUAL_UINT32(eYasl_ok, yasl_serialize(&ctx, outBuf, &outBufSize, sizeof(outBuf), 10, inBuff, sizeof(inBuff)));
+    TEST_ASSERT_EQUAL_UINT32(eYasl_ok,
+                             yasl_serialize(&ctx, outBuf, &outBufSize, sizeof(outBuf), 10, inBuff, sizeof(inBuff)));
 
     uint8_t * inBuf = outBuf;
     size_t inBufSize = outBufSize;
@@ -65,7 +66,8 @@ TEST(YaslDeSerializeTestGroup, test_deSerializeSmall) {
     uint8_t dataOut[yasl_getAvailablePktSize(&ctx)];
     uint8_t id;
     uint8_t counter;
-    TEST_ASSERT_EQUAL_UINT32(eYasl_ok,  yasl_getAvailablePkt(&ctx, dataOut, &dataOutSize, &id, &counter, sizeof(dataOut)));
+    TEST_ASSERT_EQUAL_UINT32(eYasl_ok,
+                             yasl_getAvailablePkt(&ctx, dataOut, &dataOutSize, &id, &counter, sizeof(dataOut)));
     TEST_ASSERT_EQUAL_UINT32(2, dataOutSize);
     TEST_ASSERT_EQUAL_UINT8(10, id);
     TEST_ASSERT_EQUAL_UINT8(0, counter);
@@ -77,7 +79,7 @@ TEST(YaslDeSerializeTestGroup, test_deSerializeBig) {
     size_t maxSrPktSize = 1024;
     uint8_t srPktBuf[maxSrPktSize];
 
-    yasl_init(&ctx, maxSrPktSize, srPktBuf);
+    yasl_init(&ctx, srPktBuf, maxSrPktSize);
 
     // serialize empty buffer
     uint8_t inBuff[512] = {0};
@@ -85,7 +87,8 @@ TEST(YaslDeSerializeTestGroup, test_deSerializeBig) {
     inBuff[511] = 73;
     uint8_t outBuf[yasl_getSerializedPktSize(&ctx, sizeof(inBuff))];
     size_t outBufSize;
-    TEST_ASSERT_EQUAL_UINT32(eYasl_ok, yasl_serialize(&ctx, outBuf, &outBufSize, sizeof(outBuf), 100, inBuff, sizeof(inBuff)));
+    TEST_ASSERT_EQUAL_UINT32(eYasl_ok,
+                             yasl_serialize(&ctx, outBuf, &outBufSize, sizeof(outBuf), 100, inBuff, sizeof(inBuff)));
 
     uint8_t * inBuf = outBuf;
     size_t inBufSize = outBufSize;
@@ -98,26 +101,27 @@ TEST(YaslDeSerializeTestGroup, test_deSerializeBig) {
     uint8_t dataOut[yasl_getAvailablePktSize(&ctx)];
     uint8_t id;
     uint8_t counter;
-    TEST_ASSERT_EQUAL_UINT32(eYasl_ok,  yasl_getAvailablePkt(&ctx, dataOut, &dataOutSize, &id, &counter, sizeof(dataOut)));
+    TEST_ASSERT_EQUAL_UINT32(eYasl_ok,
+                             yasl_getAvailablePkt(&ctx, dataOut, &dataOutSize, &id, &counter, sizeof(dataOut)));
     TEST_ASSERT_EQUAL_UINT32(512, dataOutSize);
     TEST_ASSERT_EQUAL_UINT8(100, id);
     TEST_ASSERT_EQUAL_UINT8(0, counter);
     TEST_ASSERT_EQUAL_MEMORY(inBuff, dataOut, dataOutSize);
 }
 
-
 TEST(YaslDeSerializeTestGroup, test_deSerializeWrongCrc) {
     yasl_ctx_t ctx;
     size_t maxSrPktSize = 50;
     uint8_t srPktBuf[maxSrPktSize];
 
-    yasl_init(&ctx, maxSrPktSize, srPktBuf);
+    yasl_init(&ctx, srPktBuf, maxSrPktSize);
 
     // serialize empty buffer
     uint8_t inBuff[5] = {10, 20, 30, 40, 50};
     uint8_t outBuf[yasl_getSerializedPktSize(&ctx, 5)];
     size_t outBufSize;
-    TEST_ASSERT_EQUAL_UINT32(eYasl_ok, yasl_serialize(&ctx, outBuf, &outBufSize, sizeof(outBuf), 10, inBuff, sizeof(inBuff)));
+    TEST_ASSERT_EQUAL_UINT32(eYasl_ok,
+                             yasl_serialize(&ctx, outBuf, &outBufSize, sizeof(outBuf), 10, inBuff, sizeof(inBuff)));
 
     // corrupt header CRC
     outBuf[3] += 1;
@@ -151,13 +155,12 @@ TEST(YaslDeSerializeTestGroup, test_deSerializeWrongCrc) {
     TEST_ASSERT_EQUAL_UINT32(eYasl_pktAvailable, yasl_deSerialize(&ctx, &inBuf, &inBufSize));
 }
 
-
 TEST(YaslDeSerializeTestGroup, test_deSerializeFewPackets) {
     yasl_ctx_t ctx;
     size_t maxSrPktSize = 20;
     uint8_t srPktBuf[maxSrPktSize];
 
-    yasl_init(&ctx, maxSrPktSize, srPktBuf);
+    yasl_init(&ctx, srPktBuf, maxSrPktSize);
 
     // serialize empty buffer
     size_t bufSize = 3;
@@ -167,8 +170,10 @@ TEST(YaslDeSerializeTestGroup, test_deSerializeFewPackets) {
     size_t outBufSize;
     outBuf[0] = 73;
     outBuf[1] = 91;
-    TEST_ASSERT_EQUAL_UINT32(eYasl_ok, yasl_serialize(&ctx, &outBuf[2], &outBufSize, sizeof(outBuf), 10, inBuff1, sizeof(inBuff1)));
-    TEST_ASSERT_EQUAL_UINT32(eYasl_ok, yasl_serialize(&ctx, &outBuf[2 + yasl_getSerializedPktSize(&ctx, bufSize)], &outBufSize, sizeof(outBuf), 20, inBuff2, sizeof(inBuff2)));
+    TEST_ASSERT_EQUAL_UINT32(
+        eYasl_ok, yasl_serialize(&ctx, &outBuf[2], &outBufSize, sizeof(outBuf), 10, inBuff1, sizeof(inBuff1)));
+    TEST_ASSERT_EQUAL_UINT32(eYasl_ok, yasl_serialize(&ctx, &outBuf[2 + yasl_getSerializedPktSize(&ctx, bufSize)],
+                                                      &outBufSize, sizeof(outBuf), 20, inBuff2, sizeof(inBuff2)));
 
     uint8_t * inBuf = outBuf;
     size_t inBufSize = sizeof(outBuf);
@@ -182,7 +187,8 @@ TEST(YaslDeSerializeTestGroup, test_deSerializeFewPackets) {
     uint8_t dataOut[yasl_getAvailablePktSize(&ctx)];
     uint8_t id;
     uint8_t counter;
-    TEST_ASSERT_EQUAL_UINT32(eYasl_ok,  yasl_getAvailablePkt(&ctx, dataOut, &dataOutSize, &id, &counter, sizeof(dataOut)));
+    TEST_ASSERT_EQUAL_UINT32(eYasl_ok,
+                             yasl_getAvailablePkt(&ctx, dataOut, &dataOutSize, &id, &counter, sizeof(dataOut)));
     TEST_ASSERT_EQUAL_UINT32(bufSize, dataOutSize);
     TEST_ASSERT_EQUAL_UINT8(10, id);
     TEST_ASSERT_EQUAL_UINT8(0, counter);
@@ -194,7 +200,8 @@ TEST(YaslDeSerializeTestGroup, test_deSerializeFewPackets) {
     TEST_ASSERT_EQUAL_UINT32(0, inBufSize);
     TEST_ASSERT_EQUAL_UINT32(bufSize, yasl_getAvailablePktSize(&ctx));
 
-    TEST_ASSERT_EQUAL_UINT32(eYasl_ok,  yasl_getAvailablePkt(&ctx, dataOut, &dataOutSize, &id, &counter, sizeof(dataOut)));
+    TEST_ASSERT_EQUAL_UINT32(eYasl_ok,
+                             yasl_getAvailablePkt(&ctx, dataOut, &dataOutSize, &id, &counter, sizeof(dataOut)));
     TEST_ASSERT_EQUAL_UINT32(bufSize, dataOutSize);
     TEST_ASSERT_EQUAL_UINT8(20, id);
     TEST_ASSERT_EQUAL_UINT8(1, counter);

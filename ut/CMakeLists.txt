@@ -1,4 +1,4 @@
-project(Yasl_ut C CXX ASM)
+project(yasl_ut C CXX ASM)
 
 include(../cmake/FetchUnity.cmake)
 
@@ -10,7 +10,7 @@ add_executable(${PROJECT_NAME}
 )
 
 target_include_directories(${PROJECT_NAME} PRIVATE
-    ${CMAKE_SOURCE_DIR}/src
+        ${CMAKE_SOURCE_DIR}/src
 )
 
 target_link_libraries(${PROJECT_NAME}

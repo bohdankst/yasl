@@ -15,7 +15,7 @@ TEST(YaslGeneralTestGroup, test_yaslGeneralSize) {
     size_t maxSrPktSize = 10;
     uint8_t srPktBuf[maxSrPktSize];
 
-    yasl_init(&ctx, maxSrPktSize, srPktBuf);
+    yasl_init(&ctx, srPktBuf, maxSrPktSize);
 
     // header only, no payload, no data crc
     TEST_ASSERT_EQUAL_UINT32(7, yasl_getSerializedPktSize(&ctx, 0));

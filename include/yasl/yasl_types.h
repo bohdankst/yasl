@@ -27,4 +27,4 @@ typedef struct {
     } srlz;
 } yasl_ctx_t;
 
-#endif //YASL_TYPES_H
+#endif // YASL_TYPES_H

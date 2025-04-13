@@ -1,7 +1,7 @@
-#include <yasl/yasl.h>
-#include "yasl_internal.h"
 #include "crc/checksum.h"
+#include "yasl_internal.h"
 #include <string.h>
+#include <yasl/yasl.h>
 
 typedef enum {
     eFsm_byte1 = 0,
@@ -11,7 +11,7 @@ typedef enum {
     eFsm_dataReady,
 } fsmState_t;
 
-void yasl_init(yasl_ctx_t *ctx, size_t maxSrPktSize, uint8_t *srPktBuf) {
+void yasl_init(yasl_ctx_t * ctx, uint8_t * srPktBuf, size_t maxSrPktSize) {
     if (NULL == ctx || 0 == maxSrPktSize || NULL == srPktBuf) {
         return;
     }
@@ -22,7 +22,7 @@ void yasl_init(yasl_ctx_t *ctx, size_t maxSrPktSize, uint8_t *srPktBuf) {
     ctx->deSrlz.inMsgBufferSize = maxSrPktSize;
 }
 
-size_t yasl_getSerializedPktSize(yasl_ctx_t *ctx, size_t payloadSize) {
+size_t yasl_getSerializedPktSize(yasl_ctx_t * ctx, size_t payloadSize) {
     if (NULL == ctx) {
         return 0;
     }
@@ -34,14 +34,14 @@ size_t yasl_getSerializedPktSize(yasl_ctx_t *ctx, size_t payloadSize) {
     return size <= ctx->deSrlz.inMsgBufferSize ? size : 0;
 }
 
-yasl_rezult_t yasl_serialize(yasl_ctx_t *ctx, uint8_t *outBuf, size_t *outBufSize, size_t outBufMaxSize, uint8_t id,
-                             const uint8_t *payload, size_t payloadSize) {
-    if (NULL == ctx || NULL == outBufSize || NULL == outBuf || outBufMaxSize <
-        yasl_getSerializedPktSize(ctx, payloadSize) || (NULL == payload && payloadSize > 0)) {
+yasl_rezult_t yasl_serialize(yasl_ctx_t * ctx, uint8_t * outBuf, size_t * outBufSize, size_t outBufMaxSize, uint8_t id,
+                             const uint8_t * payload, size_t payloadSize) {
+    if (NULL == ctx || NULL == outBufSize || NULL == outBuf ||
+        outBufMaxSize < yasl_getSerializedPktSize(ctx, payloadSize) || (NULL == payload && payloadSize > 0)) {
         return eYasl_error;
     }
 
-    yasl_header_t *header = (yasl_header_t *) outBuf;
+    yasl_header_t * header = (yasl_header_t *)outBuf;
     header->byte1 = START_BYTE_1;
     header->byte2 = START_BYTE_2;
     header->id = id;
@@ -55,21 +55,21 @@ yasl_rezult_t yasl_serialize(yasl_ctx_t *ctx, uint8_t *outBuf, size_t *outBufSiz
     if (payloadSize > 0) {
         header->length = payloadSize;
         memcpy(&outBuf[sizeof(yasl_header_t)], payload, payloadSize);
-        *((uint16_t *) &outBuf[sizeof(yasl_header_t) + payloadSize]) = crc_16(payload, payloadSize);
+        *((uint16_t *)&outBuf[sizeof(yasl_header_t) + payloadSize]) = crc_16(payload, payloadSize);
         *outBufSize += payloadSize + sizeof(uint16_t);
     }
 
-    header->crc = crc_8((uint8_t *) header, sizeof(yasl_header_t) - sizeof(header->crc));
+    header->crc = crc_8((uint8_t *)header, sizeof(yasl_header_t) - sizeof(header->crc));
 
     return eYasl_ok;
 }
 
-static void yasl_resetFsm(yasl_ctx_t *ctx) {
+static void yasl_resetFsm(yasl_ctx_t * ctx) {
     ctx->deSrlz.state = eFsm_byte1;
     ctx->deSrlz.currPos = 0;
 }
 
-yasl_rezult_t yasl_deSerializeReset(yasl_ctx_t *ctx) {
+yasl_rezult_t yasl_deSerializeReset(yasl_ctx_t * ctx) {
     if (NULL == ctx) {
         return eYasl_error;
     }
@@ -79,7 +79,7 @@ yasl_rezult_t yasl_deSerializeReset(yasl_ctx_t *ctx) {
     return eYasl_ok;
 }
 
-static void yasl_increaseFsmInput(uint8_t **inBuf, size_t *inBufSize, size_t step) {
+static void yasl_increaseFsmInput(uint8_t ** inBuf, size_t * inBufSize, size_t step) {
     *inBuf += step;
     *inBufSize -= step;
     if (0 == *inBufSize) {
@@ -87,86 +87,86 @@ static void yasl_increaseFsmInput(uint8_t **inBuf, size_t *inBufSize, size_t ste
     }
 }
 
-static void yasl_addDataToInBuffer(yasl_ctx_t *ctx, const uint8_t *buff, size_t size) {
+static void yasl_addDataToInBuffer(yasl_ctx_t * ctx, const uint8_t * buff, size_t size) {
     memcpy(&ctx->deSrlz.inMsgBuffer[ctx->deSrlz.currPos], buff, size);
     ctx->deSrlz.currPos += size;
 }
 
-yasl_rezult_t yasl_deSerialize(yasl_ctx_t *ctx, uint8_t **inBuf, size_t *inBufSize) {
+yasl_rezult_t yasl_deSerialize(yasl_ctx_t * ctx, uint8_t ** inBuf, size_t * inBufSize) {
     if (NULL == ctx || NULL == inBufSize || NULL == inBuf) {
         return eYasl_error;
     }
 
     size_t remainingSize;
     size_t copySize;
-    yasl_header_t *header = (yasl_header_t *) ctx->deSrlz.inMsgBuffer;
+    yasl_header_t * header = (yasl_header_t *)ctx->deSrlz.inMsgBuffer;
 
     while (*inBufSize > 0) {
         switch (ctx->deSrlz.state) {
-            case eFsm_byte1:
-                if (START_BYTE_1 == **inBuf) {
-                    yasl_addDataToInBuffer(ctx, *inBuf, 1);
-                    ctx->deSrlz.state = eFsm_byte2;
-                }
-                yasl_increaseFsmInput(inBuf, inBufSize, 1);
-                break;
+        case eFsm_byte1:
+            if (START_BYTE_1 == **inBuf) {
+                yasl_addDataToInBuffer(ctx, *inBuf, 1);
+                ctx->deSrlz.state = eFsm_byte2;
+            }
+            yasl_increaseFsmInput(inBuf, inBufSize, 1);
+            break;
 
-            case eFsm_byte2:
-                if (START_BYTE_2 == **inBuf) {
-                    yasl_addDataToInBuffer(ctx, *inBuf, 1);
-                    ctx->deSrlz.state = eFsm_waitHeaderCrc;
-                } else {
-                    yasl_resetFsm(ctx);
-                }
-                yasl_increaseFsmInput(inBuf, inBufSize, 1);
-                break;
+        case eFsm_byte2:
+            if (START_BYTE_2 == **inBuf) {
+                yasl_addDataToInBuffer(ctx, *inBuf, 1);
+                ctx->deSrlz.state = eFsm_waitHeaderCrc;
+            } else {
+                yasl_resetFsm(ctx);
+            }
+            yasl_increaseFsmInput(inBuf, inBufSize, 1);
+            break;
 
-            case eFsm_waitHeaderCrc:
-                remainingSize = sizeof(yasl_header_t) - ctx->deSrlz.currPos;
-                copySize = remainingSize <= *inBufSize ? remainingSize : *inBufSize;
-                yasl_addDataToInBuffer(ctx, *inBuf, copySize);
-                yasl_increaseFsmInput(inBuf, inBufSize, copySize);
+        case eFsm_waitHeaderCrc:
+            remainingSize = sizeof(yasl_header_t) - ctx->deSrlz.currPos;
+            copySize = remainingSize <= *inBufSize ? remainingSize : *inBufSize;
+            yasl_addDataToInBuffer(ctx, *inBuf, copySize);
+            yasl_increaseFsmInput(inBuf, inBufSize, copySize);
 
-                if (ctx->deSrlz.currPos != sizeof(yasl_header_t)) {
-                    break; // not enough data yet
-                }
+            if (ctx->deSrlz.currPos != sizeof(yasl_header_t)) {
+                break; // not enough data yet
+            }
 
             // we have header CRC now, check it
-                uint8_t crc8 = crc_8(ctx->deSrlz.inMsgBuffer, sizeof(yasl_header_t) - sizeof(uint8_t));
-                if (ctx->deSrlz.inMsgBuffer[sizeof(yasl_header_t) - sizeof(uint8_t)] == crc8) {
-                    ctx->deSrlz.state = 0 == header->length ? eFsm_dataReady : eFsm_waitDataCrc;
-                } else {
-                    yasl_resetFsm(ctx);
-                }
-                break;
+            uint8_t crc8 = crc_8(ctx->deSrlz.inMsgBuffer, sizeof(yasl_header_t) - sizeof(uint8_t));
+            if (ctx->deSrlz.inMsgBuffer[sizeof(yasl_header_t) - sizeof(uint8_t)] == crc8) {
+                ctx->deSrlz.state = 0 == header->length ? eFsm_dataReady : eFsm_waitDataCrc;
+            } else {
+                yasl_resetFsm(ctx);
+            }
+            break;
 
-            case eFsm_waitDataCrc:
-                remainingSize = ctx->deSrlz.currPos - sizeof(yasl_header_t) + header->length + sizeof(yasl_dataCrc_t);
-                copySize = remainingSize <= *inBufSize ? remainingSize : *inBufSize;
-                yasl_addDataToInBuffer(ctx, *inBuf, copySize);
-                yasl_increaseFsmInput(inBuf, inBufSize, copySize);
+        case eFsm_waitDataCrc:
+            remainingSize = ctx->deSrlz.currPos - sizeof(yasl_header_t) + header->length + sizeof(yasl_dataCrc_t);
+            copySize = remainingSize <= *inBufSize ? remainingSize : *inBufSize;
+            yasl_addDataToInBuffer(ctx, *inBuf, copySize);
+            yasl_increaseFsmInput(inBuf, inBufSize, copySize);
 
-                if (ctx->deSrlz.currPos != sizeof(yasl_header_t) + header->length + sizeof(yasl_dataCrc_t)) {
-                    break; // not enough data yet
-                }
+            if (ctx->deSrlz.currPos != sizeof(yasl_header_t) + header->length + sizeof(yasl_dataCrc_t)) {
+                break; // not enough data yet
+            }
 
             // we have data and data CRC now, check it
-                uint16_t crc16 = crc_16(&ctx->deSrlz.inMsgBuffer[sizeof(yasl_header_t)], header->length);
-                if (*(uint16_t *) &ctx->deSrlz.inMsgBuffer[sizeof(yasl_header_t) + header->length] == crc16) {
-                    ctx->deSrlz.state = eFsm_dataReady;
-                } else {
-                    yasl_resetFsm(ctx);
-                }
-                break;
+            uint16_t crc16 = crc_16(&ctx->deSrlz.inMsgBuffer[sizeof(yasl_header_t)], header->length);
+            if (*(uint16_t *)&ctx->deSrlz.inMsgBuffer[sizeof(yasl_header_t) + header->length] == crc16) {
+                ctx->deSrlz.state = eFsm_dataReady;
+            } else {
+                yasl_resetFsm(ctx);
+            }
+            break;
 
-            case eFsm_dataReady:
-                // wait here until data reading
-                break;
+        case eFsm_dataReady:
+            // wait here until data reading
+            break;
 
-            default:
-                ctx->deSrlz.state = eFsm_byte1;
-                ctx->deSrlz.currPos = 0;
-                break;
+        default:
+            ctx->deSrlz.state = eFsm_byte1;
+            ctx->deSrlz.currPos = 0;
+            break;
         }
 
         // break parsing if we have whole packet
@@ -178,15 +178,15 @@ yasl_rezult_t yasl_deSerialize(yasl_ctx_t *ctx, uint8_t **inBuf, size_t *inBufSi
     return eFsm_dataReady == ctx->deSrlz.state ? eYasl_pktAvailable : eYasl_ok;
 }
 
-uint32_t yasl_getAvailablePktSize(const yasl_ctx_t *ctx) {
+uint32_t yasl_getAvailablePktSize(const yasl_ctx_t * ctx) {
     if (NULL == ctx) {
         return 0;
     }
 
-    return eFsm_dataReady == ctx->deSrlz.state ? ((yasl_header_t *) (ctx->deSrlz.inMsgBuffer))->length : 0;
+    return eFsm_dataReady == ctx->deSrlz.state ? ((yasl_header_t *)(ctx->deSrlz.inMsgBuffer))->length : 0;
 }
 
-yasl_rezult_t yasl_getAvailablePkt(yasl_ctx_t *ctx, uint8_t *data, size_t *dataSize, uint8_t *id, uint8_t *counter,
+yasl_rezult_t yasl_getAvailablePkt(yasl_ctx_t * ctx, uint8_t * data, size_t * dataSize, uint8_t * id, uint8_t * counter,
                                    size_t inBuffMaxSize) {
     if (NULL == ctx || NULL == data || NULL == dataSize || NULL == id) {
         return eYasl_error;
@@ -196,7 +196,7 @@ yasl_rezult_t yasl_getAvailablePkt(yasl_ctx_t *ctx, uint8_t *data, size_t *dataS
         return eYasl_error;
     }
 
-    yasl_header_t *header = (yasl_header_t *) ctx->deSrlz.inMsgBuffer;
+    yasl_header_t * header = (yasl_header_t *)ctx->deSrlz.inMsgBuffer;
     if (inBuffMaxSize < header->length) {
         return eYasl_error;
     }
