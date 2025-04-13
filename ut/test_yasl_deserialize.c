@@ -208,10 +208,130 @@ TEST(YaslDeSerializeTestGroup, test_deSerializeFewPackets) {
     TEST_ASSERT_EQUAL_MEMORY(inBuff2, dataOut, bufSize);
 }
 
+TEST(YaslDeSerializeTestGroup, test_deSerializeStream) {
+    yasl_ctx_t ctx;
+    size_t maxSrPktSize = 1024;
+    uint8_t srPktBuf[maxSrPktSize];
+
+    yasl_init(&ctx, srPktBuf, maxSrPktSize);
+
+    // serialize empty buffer
+    uint8_t inBuff[127] = {0};
+    inBuff[0] = 25;
+    inBuff[126] = 35;
+    uint8_t outBuf[yasl_getSerializedPktSize(&ctx, sizeof(inBuff))];
+    size_t outBufSize;
+    TEST_ASSERT_EQUAL_UINT32(eYasl_ok,
+                             yasl_serialize(&ctx, outBuf, &outBufSize, sizeof(outBuf), 5, inBuff, sizeof(inBuff)));
+
+    uint8_t * inBuf = outBuf;
+    size_t inBufSize = 3;
+    TEST_ASSERT_EQUAL_UINT32(eYasl_ok, yasl_deSerialize(&ctx, &inBuf, &inBufSize));
+    TEST_ASSERT_NULL(inBuf);
+    TEST_ASSERT_EQUAL_UINT32(0, inBufSize);
+
+    inBuf = &outBuf[3];
+    inBufSize = 5;
+    TEST_ASSERT_EQUAL_UINT32(eYasl_ok, yasl_deSerialize(&ctx, &inBuf, &inBufSize));
+    TEST_ASSERT_NULL(inBuf);
+    TEST_ASSERT_EQUAL_UINT32(0, inBufSize);
+
+    inBuf = &outBuf[3 + 5];
+    inBufSize = 20;
+    TEST_ASSERT_EQUAL_UINT32(eYasl_ok, yasl_deSerialize(&ctx, &inBuf, &inBufSize));
+    TEST_ASSERT_NULL(inBuf);
+    TEST_ASSERT_EQUAL_UINT32(0, inBufSize);
+
+    inBuf = &outBuf[3 + 5 + 20];
+    inBufSize = sizeof(outBuf) - (3 + 5 + 20);
+    TEST_ASSERT_EQUAL_UINT32(eYasl_pktAvailable, yasl_deSerialize(&ctx, &inBuf, &inBufSize));
+    TEST_ASSERT_NULL(inBuf);
+    TEST_ASSERT_EQUAL_UINT32(0, inBufSize);
+}
+
+TEST(YaslDeSerializeTestGroup, test_deSerializeStreamErrHeader) {
+    yasl_ctx_t ctx;
+    size_t maxSrPktSize = 1024;
+    uint8_t srPktBuf[maxSrPktSize];
+
+    yasl_init(&ctx, srPktBuf, maxSrPktSize);
+
+    // serialize empty buffer
+    uint8_t inBuff[127] = {0};
+    inBuff[0] = 25;
+    inBuff[126] = 35;
+    uint8_t outBuf[yasl_getSerializedPktSize(&ctx, sizeof(inBuff))];
+    size_t outBufSize;
+    TEST_ASSERT_EQUAL_UINT32(eYasl_ok,
+                             yasl_serialize(&ctx, outBuf, &outBufSize, sizeof(outBuf), 5, inBuff, sizeof(inBuff)));
+
+    // only part of the header
+    uint8_t * inBuf = outBuf;
+    size_t inBufSize = 3;
+    TEST_ASSERT_EQUAL_UINT32(eYasl_ok, yasl_deSerialize(&ctx, &inBuf, &inBufSize));
+    TEST_ASSERT_NULL(inBuf);
+    TEST_ASSERT_EQUAL_UINT32(0, inBufSize);
+
+    // new packet, so both will be lost
+    inBuf = outBuf;
+    inBufSize = sizeof(outBuf);
+    TEST_ASSERT_EQUAL_UINT32(eYasl_ok, yasl_deSerialize(&ctx, &inBuf, &inBufSize));
+    TEST_ASSERT_NULL(inBuf);
+    TEST_ASSERT_EQUAL_UINT32(0, inBufSize);
+
+    // this one should be properly parsed
+    inBuf = outBuf;
+    inBufSize = sizeof(outBuf);
+    TEST_ASSERT_EQUAL_UINT32(eYasl_pktAvailable, yasl_deSerialize(&ctx, &inBuf, &inBufSize));
+    TEST_ASSERT_NULL(inBuf);
+    TEST_ASSERT_EQUAL_UINT32(0, inBufSize);
+}
+
+TEST(YaslDeSerializeTestGroup, test_deSerializeStreamErrData) {
+    yasl_ctx_t ctx;
+    size_t maxSrPktSize = 1024;
+    uint8_t srPktBuf[maxSrPktSize];
+
+    yasl_init(&ctx, srPktBuf, maxSrPktSize);
+
+    // serialize empty buffer
+    uint8_t inBuff[127] = {0};
+    inBuff[0] = 25;
+    inBuff[126] = 35;
+    uint8_t outBuf[yasl_getSerializedPktSize(&ctx, sizeof(inBuff))];
+    size_t outBufSize;
+    TEST_ASSERT_EQUAL_UINT32(eYasl_ok,
+                             yasl_serialize(&ctx, outBuf, &outBufSize, sizeof(outBuf), 5, inBuff, sizeof(inBuff)));
+
+    // header and almost all data
+    uint8_t * inBuf = outBuf;
+    size_t inBufSize = 120;
+    TEST_ASSERT_EQUAL_UINT32(eYasl_ok, yasl_deSerialize(&ctx, &inBuf, &inBufSize));
+    TEST_ASSERT_NULL(inBuf);
+    TEST_ASSERT_EQUAL_UINT32(0, inBufSize);
+
+    // new packet, so both will be lost
+    inBuf = outBuf;
+    inBufSize = sizeof(outBuf);
+    TEST_ASSERT_EQUAL_UINT32(eYasl_ok, yasl_deSerialize(&ctx, &inBuf, &inBufSize));
+    TEST_ASSERT_NULL(inBuf);
+    TEST_ASSERT_EQUAL_UINT32(0, inBufSize);
+
+    // this one should be properly parsed
+    inBuf = outBuf;
+    inBufSize = sizeof(outBuf);
+    TEST_ASSERT_EQUAL_UINT32(eYasl_pktAvailable, yasl_deSerialize(&ctx, &inBuf, &inBufSize));
+    TEST_ASSERT_NULL(inBuf);
+    TEST_ASSERT_EQUAL_UINT32(0, inBufSize);
+}
+
 TEST_GROUP_RUNNER(YaslDeSerializeTestGroup) {
     RUN_TEST_CASE(YaslDeSerializeTestGroup, test_deSerializeEmpty);
     RUN_TEST_CASE(YaslDeSerializeTestGroup, test_deSerializeSmall);
     RUN_TEST_CASE(YaslDeSerializeTestGroup, test_deSerializeBig);
     RUN_TEST_CASE(YaslDeSerializeTestGroup, test_deSerializeWrongCrc);
     RUN_TEST_CASE(YaslDeSerializeTestGroup, test_deSerializeFewPackets);
+    RUN_TEST_CASE(YaslDeSerializeTestGroup, test_deSerializeStream);
+    RUN_TEST_CASE(YaslDeSerializeTestGroup, test_deSerializeStreamErrHeader);
+    RUN_TEST_CASE(YaslDeSerializeTestGroup, test_deSerializeStreamErrData);
 }

@@ -141,7 +141,7 @@ yasl_rezult_t yasl_deSerialize(yasl_ctx_t * ctx, uint8_t ** inBuf, size_t * inBu
             break;
 
         case eFsm_waitDataCrc:
-            remainingSize = ctx->deSrlz.currPos - sizeof(yasl_header_t) + header->length + sizeof(yasl_dataCrc_t);
+            remainingSize = header->length + sizeof(yasl_dataCrc_t) + sizeof(yasl_header_t) - ctx->deSrlz.currPos;
             copySize = remainingSize <= *inBufSize ? remainingSize : *inBufSize;
             yasl_addDataToInBuffer(ctx, *inBuf, copySize);
             yasl_increaseFsmInput(inBuf, inBufSize, copySize);
